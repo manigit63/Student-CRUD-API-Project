@@ -36,6 +36,13 @@ router.get("/", async (req, res) => {
   try {
     const search = req.query.search || "";
 
+    // ex: http://localhost:3000?page=1&limit=3
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 3;
+    //  skipping formula
+    const skip = (page - 1) * limit;
+
     const query = {
       $or: [
         { first_name: { $regex: search, $options: `i` } },
@@ -43,8 +50,20 @@ router.get("/", async (req, res) => {
       ],
     };
 
-    const students = await Student.find(query);
-    res.json(students);
+    const total = await Student.countDocuments(query);
+
+    // const students = await Student.find(query);
+
+    const students = await Student.find(query).skip(skip).limit(limit);
+
+    res.json({
+      total,
+      page,
+      limit,
+      totalpage: Math.ceil(total / limit),
+      students,
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

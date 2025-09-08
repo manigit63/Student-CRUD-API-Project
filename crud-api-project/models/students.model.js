@@ -1,34 +1,36 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const studentSchema = new mongoose.Schema({
   first_name: {
-    type : String,
-    require: true
+    type: String,
+    require: true,
   },
   last_name: {
-    type : String,
-    require: true
+    type: String,
+    require: true,
   },
   email: {
-    type : String,
+    type: String,
     require: true,
-    unique: true
+    unique: true,
   },
   phone: {
-    type : String,
-    require: true
+    type: String,
+    require: true,
   },
   gender: {
-    type : String,
-    enum: ['Male','Female','Other'],
-    require: true
+    type: String,
+    enum: ["Male", "Female", "Other"],
+    require: true,
   },
   profile_pic: {
-    type : String
-  }
-})
+    type: String,
+  },
+});
 
-const Student = mongoose.model('Student', studentSchema)
+studentSchema.plugin(mongoosePaginate);
 
-module.exports = Student
+const Student = mongoose.model("Student", studentSchema);
 
+module.exports = Student;
