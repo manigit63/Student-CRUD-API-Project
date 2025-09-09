@@ -5,6 +5,8 @@ const connectDB = require("./config/database");
 const { MulterError } = require("multer");
 const cors = require("cors");
 const path = require("path");
+const auth = require("./middleware/auth.js");
+const userRoutes = require("./routes/users.routes.js");
 
 connectDB();
 
@@ -16,12 +18,17 @@ app.use(express.urlencoded({ extended: false }));
 // parse application/json
 app.use(express.json());
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));  // middleware for uploads
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // middleware for uploads
 
-app.use(cors());  //cors middleware without autherization // middleware for cors
+app.use(cors()); //cors middleware without autherization // middleware for cors
 
-app.use("/api/students", studentRoutes); // middleware for routes
+app.use("/api/users", userRoutes); // middleware for student routes like login, register
 
+app.use(auth); //global middleware before student routes
+
+app.use("/api/students", studentRoutes); // middleware for student routes
+
+// upload middleware
 app.use((error, req, res, next) => {
   if (error instanceof MulterError) {
     return res
