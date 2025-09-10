@@ -3,17 +3,33 @@ const apiUrl = "http://localhost:3000/api/students";
 let currentPage = 1;
 let currentSearch = "";
 
+// find token function
+function checkAuth() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "index.html"; //login page pe reditect id no token
+  }
+  return token;
+}
+
+const token = checkAuth();
+
 // view all students
 async function fetchStudents(search = "", page = 1) {
   currentPage = page;
   currentSearch = search;
 
   const res = await fetch(
-    `${apiUrl}?search=${encodeURIComponent(search)}&page=${page}&limit=3`
+    `${apiUrl}?search=${encodeURIComponent(search)}&page=${page}&limit=5`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   const data = await res.json();
-  console.log(data);
+  // console.log(data);
 
   const tbody = document.querySelector("#studentTableBody");
   tbody.innerHTML = "";
@@ -50,7 +66,7 @@ fetchStudents();
 function renderPagination(totalPage, currentPage) {
   const container = document.querySelector("#pagination");
   container.innerHTML = "";
-  if (!totalPage || totalPage < 2) return;
+  if (!totalPage || totalPage < 1) return;
 
   // Previous button
   const prevLi = document.createElement("li");
@@ -94,89 +110,114 @@ function renderPagination(totalPage, currentPage) {
     });
   }
   container.appendChild(nextLi);
+}
 
-  // search logics
-  document.querySelector("#searchInput").addEventListener("input", () => {
-    window.currentPage = 1;
-    fetchStudents(document.querySelector("#searchInput").value);
+// search logics
+document.querySelector("#searchInput").addEventListener("input", () => {
+  // window.currentPage = 1;
+  fetchStudents(document.querySelector("#searchInput").value,1);
+});
+
+// view single student record using bootstrap
+async function viewStudent(id) {
+  const res = await fetch(`${apiUrl}/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const student = await res.json();
+  document.querySelector(
+    "#viewProfilePic"
+  ).src = `http://localhost:3000/uploads/${student.profile_pic}`;
+  document.querySelector(
+    "#viewName"
+  ).textContent = `${student.first_name} ${student.last_name}`;
+  document.querySelector("#viewEmail").textContent = student.email;
+  document.querySelector("#viewPhone").textContent = student.phone;
+  document.querySelector("#viewGender").textContent = student.gender;
+  new bootstrap.Modal(document.querySelector("#viewStudentModal")).show();
+}
+
+// add new student
+document
+  .querySelector("#addStudentForm")
+  .addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.ok) {
+      this.reset();
+      bootstrap.Modal.getInstance(
+        document.getElementById("addStudentModal")
+      ).hide();
+      fetchStudents();
+    } else {
+      alert("unable to create student");
+    }
   });
 
-  // view single student record using bootstrap
-  async function viewStudent(id) {
-    const res = await fetch(`${apiUrl}/${id}`);
-    const student = await res.json();
-    document.querySelector(
-      "#viewProfilePic"
-    ).src = `http://localhost:3000/uploads/${student.profile_pic}`;
-    document.querySelector(
-      "#viewName"
-    ).textContent = `${student.first_name} ${student.last_name}`;
-    document.querySelector("#viewEmail").textContent = student.email;
-    document.querySelector("#viewPhone").textContent = student.phone;
-    document.querySelector("#viewGender").textContent = student.gender;
-    new bootstrap.Modal(document.querySelector("#viewStudentModal")).show();
-  }
-
-  document
-    .querySelector("#addStudentForm")
-    .addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        body: formData,
-      });
-      if (res.ok) {
-        this.reset();
-        bootstrap.Modal.getInstance(
-          document.getElementById("addStudentModal")
-        ).hide();
-        fetchStudents();
-      } else {
-        alert("unable to create student");
-      }
+// delete student
+async function deleteStudent(id) {
+  if (confirm("Are you sure to delete this student?")) {
+    await fetch(`${apiUrl}/${id}`, {
+      method: `DELETE`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+    fetchStudents();
+  }
+}
 
-  // delete student
-  async function deleteStudent(id) {
-    if (confirm("Are you sure to delete this student?")) {
-      await fetch(`${apiUrl}/${id}`, {
-        method: `DELETE`,
-      });
+// update / edit student form show
+async function editStudent(id) {
+  const res = await fetch(`${apiUrl}/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const student = await res.json();
+  document.querySelector("#editStudentId").value = student._id;
+  document.querySelector("#editFirstName").value = student.first_name;
+  document.querySelector("#editLastName").value = student.last_name;
+  document.querySelector("#editEmail").value = student.email;
+  document.querySelector("#editPhone").value = student.phone;
+  document.querySelector("#editGender").value = student.gender;
+  new bootstrap.Modal(document.querySelector("#editStudentModal")).show();
+}
+
+//  update  student record
+document
+  .querySelector("#editStudentForm")
+  .addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const id = document.querySelector("#editStudentId").value;
+    const formData = new FormData(this);
+    const res = await fetch(`${apiUrl}/${id}`, {
+      method: "PUT",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.ok) {
+      bootstrap.Modal.getInstance(
+        document.querySelector("#editStudentModal")
+      ).hide();
       fetchStudents();
+    } else {
+      alert("Error while updating records, try again!");
     }
-  }
+  });
 
-  // edit student
-  async function editStudent(id) {
-    const res = await fetch(`${apiUrl}/${id}`);
-    const student = await res.json();
-    document.querySelector("#editStudentId").value = student._id;
-    document.querySelector("#editFirstName").value = student.first_name;
-    document.querySelector("#editLastName").value = student.last_name;
-    document.querySelector("#editEmail").value = student.email;
-    document.querySelector("#editPhone").value = student.phone;
-    document.querySelector("#editGender").value = student.gender;
-    new bootstrap.Modal(document.querySelector("#editStudentModal")).show();
-  }
-
-  document
-    .querySelector("#editStudentForm")
-    .addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const id = document.querySelector("#editStudentId").value;
-      const formData = new FormData(this);
-      const res = await fetch(`${apiUrl}/${id}`, {
-        method: "PUT",
-        body: formData,
-      });
-      if (res.ok) {
-        bootstrap.Modal.getInstance(
-          document.querySelector("#editStudentModal")
-        ).hide();
-        fetchStudents();
-      } else {
-        alert("Error while updating records, try again!");
-      }
-    });
+// logout funtion
+function Logout() {
+  localStorage.removeItem("token");
+  window.location.href = "index.html";
 }

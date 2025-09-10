@@ -7,10 +7,10 @@ const cors = require("cors");
 const path = require("path");
 const auth = require("./middleware/auth.js");
 const userRoutes = require("./routes/users.routes.js");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
 
 connectDB();
-
-const PORT = process.env.PORT;
 
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: false }));
@@ -21,6 +21,18 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // middleware for uploads
 
 app.use(cors()); //cors middleware without autherization // middleware for cors
+
+const limiter = rateLimit({
+  windowsMs: 1000 * 60 * 1,
+  max: 100,
+  message: "Too many request from this ip, please try again later...",
+});
+
+app.use(limiter); //global middleware
+
+app.use(helmet());
+
+// suggestion : use it in online server , don't use it in local server it will disrupt pyur testing practice
 
 app.use("/api/users", userRoutes); // middleware for student routes like login, register
 
@@ -39,6 +51,8 @@ app.use((error, req, res, next) => {
   }
   next();
 });
+
+const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

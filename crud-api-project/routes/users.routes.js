@@ -10,12 +10,19 @@ dotenv.config();
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    // console.log(req.body)
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+
+
 
     if (existingUser)
       return res
         .status(400)
         .json({ message: "username and email already exist!" });
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
 
     const hashPassword = await bcrypt.hash(password, 10);
 

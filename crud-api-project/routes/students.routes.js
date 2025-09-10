@@ -39,7 +39,7 @@ router.get("/", async (req, res) => {
     // ex: http://localhost:3000?page=1&limit=3
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 3;
+    const limit = parseInt(req.query.limit) || 5;
     //  skipping formula
     const skip = (page - 1) * limit;
 
@@ -63,7 +63,6 @@ router.get("/", async (req, res) => {
       totalpage: Math.ceil(total / limit),
       students,
     });
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
